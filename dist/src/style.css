@@ -123,6 +123,7 @@ button {
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.08em;
+  text-shadow: 0 0 12px rgba(66, 245, 255, 0.3);
 }
 
 .brand__edition {
@@ -186,23 +187,26 @@ button {
   min-width: 92px;
   padding: 10px 12px;
   border-left: 2px solid var(--cyan);
-  background: linear-gradient(90deg, rgba(5, 4, 11, 0.78), transparent);
+  background: linear-gradient(90deg, rgba(5, 4, 11, 0.85), transparent);
   text-shadow: 0 0 12px rgba(66, 245, 255, 0.45);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
 }
 
 .hud__metric--right {
   justify-items: end;
   border-right: 2px solid var(--pink);
   border-left: 0;
-  background: linear-gradient(-90deg, rgba(5, 4, 11, 0.78), transparent);
+  background: linear-gradient(-90deg, rgba(5, 4, 11, 0.85), transparent);
   text-shadow: 0 0 12px rgba(255, 60, 166, 0.45);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px));
 }
 
 .hud__label {
   color: var(--muted);
   font-family: var(--mono);
   font-size: 0.55rem;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
 }
 
 .hud strong {
@@ -210,6 +214,7 @@ button {
   font-family: var(--mono);
   font-size: 1.5rem;
   letter-spacing: 0.05em;
+  text-shadow: 0 0 18px currentColor;
 }
 
 .hud small {
@@ -449,6 +454,7 @@ button {
   display: flex;
   align-items: center;
   gap: 7px;
+  text-transform: uppercase;
 }
 
 .footer-bar__dot {

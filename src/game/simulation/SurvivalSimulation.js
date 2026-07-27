@@ -2,6 +2,7 @@ const MAX_LEVEL = 5;
 const PLAYER_SPEED = 440;
 const PLAYER_RADIUS = 15;
 const PLAYER_BOTTOM_PADDING = 56;
+const ROLL_EASE = 6;
 
 export class SurvivalSimulation {
   constructor(random = Math.random) {
@@ -17,6 +18,7 @@ export class SurvivalSimulation {
     const level = Math.min(MAX_LEVEL, 1 + Math.floor(this.elapsedMs / 12_000));
     return {
       level,
+      intensity: (level - 1) / (MAX_LEVEL - 1),
       obstacleSpeed: 205 + (level - 1) * 62,
       spawnIntervalMs: Math.max(330, 880 - (level - 1) * 125),
       maxObstacles: 8 + level * 3,
@@ -36,6 +38,9 @@ export class SurvivalSimulation {
       width - 26,
     );
     this.player.y = height - PLAYER_BOTTOM_PADDING;
+
+    const targetRoll = direction * 0.28;
+    this.player.roll += (targetRoll - this.player.roll) * Math.min(1, ROLL_EASE * deltaSeconds);
 
     const difficulty = this.difficulty;
     this.spawnTimer += Math.min(elapsedDelta, 250);
@@ -81,12 +86,18 @@ export class SurvivalSimulation {
     this.spawnTimer = 0;
     this.runState = 'running';
     this.paused = false;
-    this.player = { x: width / 2, y: height - PLAYER_BOTTOM_PADDING };
+    this.player = { x: width / 2, y: height - PLAYER_BOTTOM_PADDING, roll: 0 };
     this.obstacles = [];
   }
 
   spawnObstacle(width, baseSpeed) {
     const radius = 12 + this.random() * 8;
+    const vertexCount = 7 + Math.floor(this.random() * 5);
+    const vertices = Array.from({ length: vertexCount }, (_, i) => {
+      const angle = (i / vertexCount) * Math.PI * 2;
+      const jitter = 0.72 + this.random() * 0.36;
+      return { angle, r: radius * jitter };
+    });
     this.obstacles.push({
       x: 34 + this.random() * Math.max(1, width - 68),
       y: -36,
@@ -95,6 +106,8 @@ export class SurvivalSimulation {
       rotation: 0,
       spin: -1.5 + this.random() * 3,
       hue: this.random() > 0.7 ? 'cyan' : 'pink',
+      vertices,
+      crackSeed: this.random() * 100,
     });
   }
 
