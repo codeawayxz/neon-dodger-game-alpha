@@ -12,7 +12,7 @@ const input = new InputController();
 let lastTimestamp = performance.now();
 let lastScore = -1;
 let lastThreat = -1;
-let bestScore = Number.parseInt(localStorage.getItem('neon-dodger-best') ?? '0', 10);
+let bestScore = Number.parseInt(localStorage.getItem('neon-voyager-best') ?? '0', 10);
 if (!Number.isFinite(bestScore)) bestScore = 0;
 
 const restart = () => {
@@ -57,7 +57,7 @@ const loop = (timestamp) => {
   if (collision) {
     input.clear();
     bestScore = Math.max(bestScore, simulation.score);
-    localStorage.setItem('neon-dodger-best', String(bestScore));
+    localStorage.setItem('neon-voyager-best', String(bestScore));
     hud.showGameOver(simulation.score, bestScore);
   }
 

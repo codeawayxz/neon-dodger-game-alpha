@@ -37,6 +37,6 @@ const standalone = html
     `<script type="module">\n${bundle}\n</script>`,
   );
 
-await writeFile(new URL('neon-dodger.html', output), standalone);
+await writeFile(new URL('neon-voyager.html', output), standalone);
 
 console.log('Built project and standalone game in dist/');

@@ -1,4 +1,4 @@
-# Neon Dodger
+# Neon Voyager
 
 A compact, dependency-free 2D survival arcade game built with Canvas and
 browser-native JavaScript.
