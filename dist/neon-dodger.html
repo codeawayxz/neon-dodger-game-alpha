@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#05040b" />
+    <meta
+      name="description"
+      content="Neon Dodger — survive the accelerating storm of falling neon circles."
+    />
+    <title>Neon Dodger</title>
+    <style>
+:root {
+  color-scheme: dark;
+  --ink: #05040b;
+  --panel: #090712;
+  --panel-raised: rgba(13, 10, 26, 0.88);
+  --cyan: #42f5ff;
+  --cyan-soft: rgba(66, 245, 255, 0.17);
+  --pink: #ff3ca6;
+  --pink-soft: rgba(255, 60, 166, 0.18);
+  --violet: #8b5cff;
+  --white: #edfdff;
+  --muted: #89869d;
+  --line: rgba(125, 116, 168, 0.2);
+  --display: 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 110%, rgba(133, 49, 255, 0.18), transparent 42%),
+    linear-gradient(135deg, #030309, #090512 55%, #05040b);
+  color: var(--white);
+  font-family: var(--display);
+}
+
+button {
+  font: inherit;
+}
+
+#app {
+  position: relative;
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  isolation: isolate;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
+}
+
+#app::before {
+  position: fixed;
+  z-index: -2;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 46px 46px;
+  content: '';
+  mask-image: linear-gradient(to bottom, transparent, black 28%, black);
+}
+
+.ambient {
+  position: fixed;
+  z-index: -1;
+  width: 36vw;
+  height: 36vw;
+  border-radius: 999px;
+  filter: blur(100px);
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+.ambient--cyan {
+  top: -20vw;
+  left: -8vw;
+  background: var(--cyan);
+}
+
+.ambient--pink {
+  right: -16vw;
+  bottom: -18vw;
+  background: var(--pink);
+}
+
+.game-shell {
+  width: min(100%, 520px);
+  user-select: none;
+}
+
+.brand,
+.footer-bar {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+}
+
+.brand {
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.brand__mark {
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--cyan);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 0 5px var(--cyan));
+}
+
+.brand__name {
+  color: var(--white);
+  font-family: var(--display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.brand__edition {
+  margin-left: auto;
+}
+
+.game-frame {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: min(76svh, 720px);
+  min-height: 480px;
+  border: 1px solid rgba(66, 245, 255, 0.28);
+  background: var(--panel);
+  box-shadow:
+    0 0 0 1px rgba(255, 60, 166, 0.06),
+    0 26px 80px rgba(0, 0, 0, 0.6),
+    0 0 42px rgba(66, 245, 255, 0.08);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+}
+
+.game-frame::before {
+  position: absolute;
+  z-index: 7;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 3px,
+    rgba(255, 255, 255, 0.018) 4px
+  );
+  content: '';
+  pointer-events: none;
+}
+
+.game-canvas,
+.game-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.game-canvas canvas {
+  display: block;
+}
+
+.hud {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 20px;
+  pointer-events: none;
+}
+
+.hud__metric {
+  display: grid;
+  gap: 2px;
+  min-width: 92px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--cyan);
+  background: linear-gradient(90deg, rgba(5, 4, 11, 0.78), transparent);
+  text-shadow: 0 0 12px rgba(66, 245, 255, 0.45);
+}
+
+.hud__metric--right {
+  justify-items: end;
+  border-right: 2px solid var(--pink);
+  border-left: 0;
+  background: linear-gradient(-90deg, rgba(5, 4, 11, 0.78), transparent);
+  text-shadow: 0 0 12px rgba(255, 60, 166, 0.45);
+}
+
+.hud__label {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+}
+
+.hud strong {
+  color: var(--white);
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+}
+
+.hud small {
+  margin-left: 4px;
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+}
+
+.threat {
+  display: flex;
+  gap: 4px;
+  padding-top: 8px;
+}
+
+.threat i {
+  width: 12px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.11);
+  transform: skewX(-18deg);
+}
+
+.threat i.is-active {
+  background: var(--pink);
+  box-shadow: 0 0 8px var(--pink);
+}
+
+.status-message {
+  position: absolute;
+  z-index: 10;
+  bottom: 96px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  background: rgba(5, 4, 11, 0.72);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  opacity: 1;
+  transform: translateX(-50%);
+  transition: 240ms ease;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.status-message strong {
+  color: var(--cyan);
+}
+
+.status-message.is-hidden {
+  opacity: 0;
+  transform: translate(-50%, 8px);
+}
+
+.pause-overlay {
+  position: absolute;
+  z-index: 25;
+  inset: 0;
+  place-content: center;
+  place-items: center;
+  background: rgba(5, 4, 11, 0.82);
+  backdrop-filter: blur(6px);
+  text-align: center;
+}
+
+.pause-overlay:not([hidden]) {
+  display: grid;
+}
+
+.pause-overlay__eyebrow,
+.game-over__eyebrow {
+  color: var(--pink);
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.28em;
+}
+
+.pause-overlay strong {
+  margin-top: 8px;
+  letter-spacing: 0.08em;
+}
+
+.game-over {
+  position: absolute;
+  z-index: 30;
+  top: 50%;
+  left: 50%;
+  overflow: hidden;
+  width: min(84%, 360px);
+  padding: 32px 30px 26px;
+  border: 1px solid rgba(255, 60, 166, 0.5);
+  background:
+    linear-gradient(135deg, rgba(255, 60, 166, 0.08), transparent 38%),
+    rgba(8, 6, 17, 0.94);
+  box-shadow:
+    0 0 42px rgba(255, 60, 166, 0.2),
+    0 28px 70px rgba(0, 0, 0, 0.72);
+  opacity: 0;
+  text-align: center;
+  transform: translate(-50%, -46%) scale(0.96);
+  transition: 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+
+.game-over.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.game-over h1 {
+  margin: 8px 0 24px;
+  color: var(--white);
+  font-size: clamp(2rem, 10vw, 3.1rem);
+  font-style: italic;
+  letter-spacing: 0.04em;
+  line-height: 0.9;
+  text-shadow:
+    2px 0 0 var(--pink),
+    -2px 0 0 var(--cyan);
+}
+
+.game-over__scanline {
+  position: absolute;
+  top: -20%;
+  right: 0;
+  left: 0;
+  height: 22%;
+  background: linear-gradient(transparent, rgba(66, 245, 255, 0.1), transparent);
+  animation: scan 2.7s linear infinite;
+  pointer-events: none;
+}
+
+.game-over__scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 24px;
+  border-block: 1px solid var(--line);
+}
+
+.game-over__scores div {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.game-over__scores div + div {
+  border-left: 1px solid var(--line);
+}
+
+.game-over__scores span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+}
+
+.game-over__scores strong {
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 1.7rem;
+}
+
+#restart-button {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid var(--cyan);
+  background: var(--cyan);
+  color: #021013;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  box-shadow: 0 0 24px rgba(66, 245, 255, 0.18);
+  transition: 150ms ease;
+}
+
+#restart-button:hover,
+#restart-button:focus-visible {
+  background: transparent;
+  color: var(--cyan);
+  outline: 2px solid transparent;
+  box-shadow: 0 0 28px rgba(66, 245, 255, 0.3);
+}
+
+.game-over__hint {
+  display: block;
+  margin-top: 12px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.12em;
+}
+
+.touch-controls {
+  position: absolute;
+  z-index: 15;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: none;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.touch-controls button {
+  display: grid;
+  width: 66px;
+  height: 54px;
+  place-items: center;
+  border: 1px solid rgba(66, 245, 255, 0.5);
+  background: rgba(5, 4, 11, 0.76);
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.touch-controls button.is-pressed {
+  background: var(--cyan-soft);
+  box-shadow: inset 0 0 20px rgba(66, 245, 255, 0.2);
+  transform: translateY(1px);
+}
+
+.footer-bar {
+  justify-content: space-between;
+  margin-top: 11px;
+  padding-inline: 2px;
+}
+
+.footer-bar span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.footer-bar__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--cyan);
+  box-shadow: 0 0 7px var(--cyan);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes scan {
+  to {
+    transform: translateY(600%);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .touch-controls {
+    display: flex;
+  }
+
+  .status-message {
+    bottom: 82px;
+  }
+}
+
+@media (max-height: 650px) {
+  #app {
+    padding-block: 10px;
+  }
+
+  .game-frame {
+    height: calc(100svh - 70px);
+    min-height: 400px;
+  }
+
+  .brand {
+    margin-bottom: 7px;
+  }
+
+  .footer-bar {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  #app {
+    padding-inline: 0;
+  }
+
+  .game-shell {
+    width: 100%;
+  }
+
+  .brand,
+  .footer-bar {
+    padding-inline: 14px;
+  }
+
+  .game-frame {
+    height: calc(100svh - 72px);
+    min-height: 460px;
+    border-right: 0;
+    border-left: 0;
+    clip-path: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+</style>
+  </head>
+  <body>
+    <main id="app" aria-label="Neon Dodger game">
+      <div class="ambient ambient--cyan" aria-hidden="true"></div>
+      <div class="ambient ambient--pink" aria-hidden="true"></div>
+
+      <section class="game-shell">
+        <header class="brand" aria-label="Game title">
+          <span class="brand__mark" aria-hidden="true"></span>
+          <span class="brand__name">NEON DODGER</span>
+          <span class="brand__edition">ARCADE_01</span>
+        </header>
+
+        <div id="game-frame" class="game-frame">
+          <div id="game-canvas" class="game-canvas" aria-label="Game playfield"></div>
+
+          <div class="hud" aria-live="polite">
+            <div class="hud__metric">
+              <span class="hud__label">SURVIVAL</span>
+              <span><strong id="score">000</strong><small>S</small></span>
+            </div>
+            <div class="hud__metric hud__metric--right">
+              <span class="hud__label">THREAT</span>
+              <span class="threat">
+                <i id="threat-1"></i><i id="threat-2"></i><i id="threat-3"></i>
+                <i id="threat-4"></i><i id="threat-5"></i>
+              </span>
+            </div>
+          </div>
+
+          <div id="status-message" class="status-message">
+            <span>MOVE</span>
+            <strong>← A</strong>
+            <span>or</span>
+            <strong>D →</strong>
+          </div>
+
+          <div id="pause-overlay" class="pause-overlay" hidden>
+            <span class="pause-overlay__eyebrow">SIGNAL PAUSED</span>
+            <strong>RETURN TO CONTINUE</strong>
+          </div>
+
+          <section id="game-over" class="game-over" aria-labelledby="game-over-title" hidden>
+            <div class="game-over__scanline" aria-hidden="true"></div>
+            <span class="game-over__eyebrow">SIGNAL LOST</span>
+            <h1 id="game-over-title">GAME OVER</h1>
+            <div class="game-over__scores">
+              <div>
+                <span>TIME</span>
+                <strong id="final-score">000</strong>
+              </div>
+              <div>
+                <span>BEST</span>
+                <strong id="best-score">000</strong>
+              </div>
+            </div>
+            <button id="restart-button" type="button">
+              <span aria-hidden="true">↻</span>
+              RESTART RUN
+            </button>
+            <span class="game-over__hint">PRESS SPACE OR ENTER</span>
+          </section>
+
+          <div class="touch-controls" aria-label="Touch controls">
+            <button id="move-left" type="button" aria-label="Move left">
+              <span aria-hidden="true">←</span>
+            </button>
+            <button id="move-right" type="button" aria-label="Move right">
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </div>
+
+        <footer class="footer-bar">
+          <span><i class="footer-bar__dot"></i>RUN ACTIVE</span>
+          <span>AVOID // SURVIVE // REPEAT</span>
+        </footer>
+      </section>
+    </main>
+    <script type="module">
+const MAX_LEVEL = 5;
+const PLAYER_SPEED = 440;
+const PLAYER_RADIUS = 15;
+const PLAYER_BOTTOM_PADDING = 56;
+
+class SurvivalSimulation {
+  constructor(random = Math.random) {
+    this.random = random;
+    this.reset(520, 720);
+  }
+
+  get score() {
+    return Math.floor(this.elapsedMs / 1000);
+  }
+
+  get difficulty() {
+    const level = Math.min(MAX_LEVEL, 1 + Math.floor(this.elapsedMs / 12_000));
+    return {
+      level,
+      obstacleSpeed: 205 + (level - 1) * 62,
+      spawnIntervalMs: Math.max(330, 880 - (level - 1) * 125),
+      maxObstacles: 8 + level * 3,
+    };
+  }
+
+  update(deltaMs, direction, width, height) {
+    if (this.runState !== 'running' || this.paused) return false;
+
+    const elapsedDelta = Math.max(0, deltaMs);
+    const safeDelta = Math.min(elapsedDelta, 50);
+    const deltaSeconds = safeDelta / 1000;
+    this.elapsedMs += elapsedDelta;
+    this.player.x = this.clamp(
+      this.player.x + direction * PLAYER_SPEED * deltaSeconds,
+      26,
+      width - 26,
+    );
+    this.player.y = height - PLAYER_BOTTOM_PADDING;
+
+    const difficulty = this.difficulty;
+    this.spawnTimer += Math.min(elapsedDelta, 250);
+    if (
+      this.spawnTimer >= difficulty.spawnIntervalMs &&
+      this.obstacles.length < difficulty.maxObstacles
+    ) {
+      this.spawnTimer = 0;
+      this.spawnObstacle(width, difficulty.obstacleSpeed);
+    }
+
+    for (const obstacle of this.obstacles) {
+      obstacle.y += obstacle.speed * deltaSeconds;
+      obstacle.rotation += obstacle.spin * deltaSeconds;
+    }
+    this.obstacles = this.obstacles.filter((obstacle) => obstacle.y < height + 70);
+
+    const collision = this.obstacles.some((obstacle) => {
+      const dx = obstacle.x - this.player.x;
+      const dy = obstacle.y - this.player.y;
+      const collisionRadius = obstacle.radius + PLAYER_RADIUS;
+      return dx * dx + dy * dy <= collisionRadius * collisionRadius;
+    });
+
+    if (collision) {
+      this.runState = 'game-over';
+      return true;
+    }
+    return false;
+  }
+
+  resize(width, height) {
+    this.player.x = this.clamp(this.player.x, 26, width - 26);
+    this.player.y = height - PLAYER_BOTTOM_PADDING;
+  }
+
+  setPaused(paused) {
+    if (this.runState === 'running') this.paused = paused;
+  }
+
+  reset(width, height) {
+    this.elapsedMs = 0;
+    this.spawnTimer = 0;
+    this.runState = 'running';
+    this.paused = false;
+    this.player = { x: width / 2, y: height - PLAYER_BOTTOM_PADDING };
+    this.obstacles = [];
+  }
+
+  spawnObstacle(width, baseSpeed) {
+    const radius = 12 + this.random() * 8;
+    this.obstacles.push({
+      x: 34 + this.random() * Math.max(1, width - 68),
+      y: -36,
+      radius,
+      speed: baseSpeed * (0.88 + this.random() * 0.26),
+      rotation: 0,
+      spin: -1.5 + this.random() * 3,
+      hue: this.random() > 0.7 ? 'cyan' : 'pink',
+    });
+  }
+
+  clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+}
+
+
+class InputController {
+  constructor() {
+    this.clear();
+    this.onKeyDown = this.onKeyDown.bind(this);
+    this.onKeyUp = this.onKeyUp.bind(this);
+    window.addEventListener('keydown', this.onKeyDown);
+    window.addEventListener('keyup', this.onKeyUp);
+  }
+
+  get direction() {
+    const left = this.keyboardLeft || this.pointerLeft;
+    const right = this.keyboardRight || this.pointerRight;
+    if (left === right) return 0;
+    return left ? -1 : 1;
+  }
+
+  setPointer(direction, active) {
+    if (direction === -1) this.pointerLeft = active;
+    if (direction === 1) this.pointerRight = active;
+  }
+
+  clear() {
+    this.keyboardLeft = false;
+    this.keyboardRight = false;
+    this.pointerLeft = false;
+    this.pointerRight = false;
+  }
+
+  destroy() {
+    window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keyup', this.onKeyUp);
+  }
+
+  onKeyDown(event) {
+    if (event.code === 'ArrowLeft' || event.code === 'KeyA') this.keyboardLeft = true;
+    if (event.code === 'ArrowRight' || event.code === 'KeyD') this.keyboardRight = true;
+    if (event.code.startsWith('Arrow')) event.preventDefault();
+  }
+
+  onKeyUp(event) {
+    if (event.code === 'ArrowLeft' || event.code === 'KeyA') this.keyboardLeft = false;
+    if (event.code === 'ArrowRight' || event.code === 'KeyD') this.keyboardRight = false;
+  }
+}
+
+
+class NeonRenderer {
+  constructor(container) {
+    this.canvas = document.createElement('canvas');
+    this.canvas.setAttribute('aria-hidden', 'true');
+    this.context = this.canvas.getContext('2d', { alpha: false });
+    if (!this.context) throw new Error('Canvas 2D is not supported by this browser.');
+    container.append(this.canvas);
+
+    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.stars = Array.from({ length: 34 }, (_, index) => ({
+      x: this.seeded(index * 3.31),
+      y: this.seeded(index * 7.17),
+      length: 2 + this.seeded(index * 5.73) * 7,
+      alpha: 0.12 + this.seeded(index * 9.91) * 0.4,
+      color: index % 4 === 0 ? '#ff3ca6' : '#42f5ff',
+    }));
+    this.resize();
+  }
+
+  resize() {
+    const rect = this.canvas.parentElement.getBoundingClientRect();
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    this.width = Math.max(320, rect.width);
+    this.height = Math.max(400, rect.height);
+    this.canvas.width = Math.round(this.width * ratio);
+    this.canvas.height = Math.round(this.height * ratio);
+    this.canvas.style.width = `${this.width}px`;
+    this.canvas.style.height = `${this.height}px`;
+    this.context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  }
+
+  render(simulation, timestamp) {
+    const context = this.context;
+    context.clearRect(0, 0, this.width, this.height);
+    this.drawBackdrop(context, timestamp);
+    this.drawObstacles(context, simulation.obstacles);
+    this.drawPlayer(context, simulation.player, simulation.runState === 'game-over', timestamp);
+  }
+
+  drawBackdrop(context, timestamp) {
+    const gradient = context.createLinearGradient(0, 0, 0, this.height);
+    gradient.addColorStop(0, '#070612');
+    gradient.addColorStop(0.62, '#0a0713');
+    gradient.addColorStop(1, '#16091c');
+    context.fillStyle = gradient;
+    context.fillRect(0, 0, this.width, this.height);
+
+    context.save();
+    context.strokeStyle = 'rgba(111, 89, 172, 0.22)';
+    context.lineWidth = 1;
+    const cellWidth = Math.max(48, this.width / 9);
+    const drift = this.reducedMotion ? 0 : (timestamp * 0.018) % 54;
+    for (let x = -cellWidth; x < this.width + cellWidth; x += cellWidth) {
+      context.beginPath();
+      context.moveTo(x, 0);
+      context.lineTo(x - 70, this.height);
+      context.stroke();
+    }
+    for (let y = -54 + drift; y < this.height + 54; y += 54) {
+      context.beginPath();
+      context.moveTo(0, y);
+      context.lineTo(this.width, y);
+      context.stroke();
+    }
+    context.restore();
+
+    context.save();
+    for (const star of this.stars) {
+      const travel = this.reducedMotion ? 0 : (timestamp * 0.025) % this.height;
+      const y = (star.y * this.height + travel) % this.height;
+      context.globalAlpha = star.alpha;
+      context.fillStyle = star.color;
+      context.fillRect(star.x * this.width, y, 1.5, star.length);
+    }
+    context.restore();
+
+    context.strokeStyle = 'rgba(66, 245, 255, 0.14)';
+    context.beginPath();
+    context.moveTo(24, 0);
+    context.lineTo(24, this.height);
+    context.moveTo(this.width - 24, 0);
+    context.lineTo(this.width - 24, this.height);
+    context.stroke();
+  }
+
+  drawPlayer(context, player, hit, timestamp) {
+    const pulse = this.reducedMotion ? 1 : 0.92 + Math.sin(timestamp * 0.008) * 0.08;
+    context.save();
+    context.translate(player.x, player.y);
+    context.scale(pulse, pulse);
+    context.shadowColor = hit ? '#ff3ca6' : '#42f5ff';
+    context.shadowBlur = hit ? 28 : 20;
+    context.fillStyle = hit ? 'rgba(255, 60, 166, 0.2)' : 'rgba(66, 245, 255, 0.16)';
+    this.triangle(context, 0, -24, -28, 22, 28, 22);
+    context.fill();
+    context.lineWidth = 2.4;
+    context.strokeStyle = hit ? '#ffffff' : '#d9fdff';
+    this.triangle(context, 0, -18, -21, 18, 21, 18);
+    context.stroke();
+    context.fillStyle = '#ff3ca6';
+    this.triangle(context, 0, -6, -7, 10, 7, 10);
+    context.fill();
+    context.restore();
+
+    if (!hit) {
+      const trail = context.createLinearGradient(0, player.y + 14, 0, player.y + 60);
+      trail.addColorStop(0, 'rgba(66, 245, 255, 0.5)');
+      trail.addColorStop(1, 'rgba(66, 245, 255, 0)');
+      context.fillStyle = trail;
+      context.beginPath();
+      context.moveTo(player.x - 7, player.y + 15);
+      context.lineTo(player.x + 7, player.y + 15);
+      context.lineTo(player.x, player.y + 55);
+      context.closePath();
+      context.fill();
+    }
+  }
+
+  drawObstacles(context, obstacles) {
+    for (const obstacle of obstacles) {
+      const color = obstacle.hue === 'cyan' ? '#42f5ff' : '#ff3ca6';
+      context.save();
+      context.translate(obstacle.x, obstacle.y);
+      context.rotate(obstacle.rotation);
+      context.shadowColor = color;
+      context.shadowBlur = 19;
+      context.fillStyle = '#16091c';
+      context.strokeStyle = color;
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(0, 0, obstacle.radius, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.globalAlpha = 0.75;
+      context.fillStyle = '#ffffff';
+      context.beginPath();
+      context.arc(-obstacle.radius * 0.35, -obstacle.radius * 0.4, 2.6, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+  }
+
+  triangle(context, topX, topY, leftX, leftY, rightX, rightY) {
+    context.beginPath();
+    context.moveTo(topX, topY);
+    context.lineTo(rightX, rightY);
+    context.lineTo(leftX, leftY);
+    context.closePath();
+  }
+
+  seeded(value) {
+    return Math.abs(Math.sin(value * 12.9898) * 43758.5453) % 1;
+  }
+}
+
+
+const requiredElement = (id) => {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`Missing required UI element: ${id}`);
+  return element;
+};
+
+class Hud {
+  constructor(callbacks) {
+    this.score = requiredElement('score');
+    this.finalScore = requiredElement('final-score');
+    this.bestScore = requiredElement('best-score');
+    this.gameOver = requiredElement('game-over');
+    this.restartButton = requiredElement('restart-button');
+    this.statusMessage = requiredElement('status-message');
+    this.pauseOverlay = requiredElement('pause-overlay');
+    this.leftButton = requiredElement('move-left');
+    this.rightButton = requiredElement('move-right');
+    this.threatSegments = Array.from(
+      { length: 5 },
+      (_, index) => requiredElement(`threat-${index + 1}`),
+    );
+
+    this.restartButton.addEventListener('click', callbacks.onRestart);
+    this.bindHoldButton(this.leftButton, -1, callbacks.onDirection);
+    this.bindHoldButton(this.rightButton, 1, callbacks.onDirection);
+  }
+
+  updateScore(value) {
+    this.score.textContent = this.formatScore(value);
+  }
+
+  updateThreat(level) {
+    this.threatSegments.forEach((segment, index) => {
+      segment.classList.toggle('is-active', index < level);
+    });
+  }
+
+  dismissHint() {
+    this.statusMessage.classList.add('is-hidden');
+  }
+
+  showGameOver(score, best) {
+    this.finalScore.textContent = this.formatScore(score);
+    this.bestScore.textContent = this.formatScore(best);
+    this.gameOver.hidden = false;
+    requestAnimationFrame(() => this.gameOver.classList.add('is-visible'));
+    this.restartButton.focus({ preventScroll: true });
+  }
+
+  hideGameOver() {
+    this.gameOver.classList.remove('is-visible');
+    this.gameOver.hidden = true;
+  }
+
+  setPaused(paused) {
+    this.pauseOverlay.hidden = !paused;
+  }
+
+  formatScore(value) {
+    return Math.min(value, 999).toString().padStart(3, '0');
+  }
+
+  bindHoldButton(button, direction, callback) {
+    const release = () => {
+      button.classList.remove('is-pressed');
+      callback(direction, false);
+    };
+    button.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      button.setPointerCapture(event.pointerId);
+      button.classList.add('is-pressed');
+      callback(direction, true);
+    });
+    button.addEventListener('pointerup', release);
+    button.addEventListener('pointercancel', release);
+    button.addEventListener('lostpointercapture', release);
+  }
+}
+
+
+
+const canvasContainer = document.getElementById('game-canvas');
+if (!canvasContainer) throw new Error('Missing game canvas container.');
+
+const renderer = new NeonRenderer(canvasContainer);
+const simulation = new SurvivalSimulation();
+const input = new InputController();
+let lastTimestamp = performance.now();
+let lastScore = -1;
+let lastThreat = -1;
+let bestScore = Number.parseInt(localStorage.getItem('neon-dodger-best') ?? '0', 10);
+if (!Number.isFinite(bestScore)) bestScore = 0;
+
+const restart = () => {
+  input.clear();
+  simulation.reset(renderer.width, renderer.height);
+  lastTimestamp = performance.now();
+  lastScore = -1;
+  lastThreat = -1;
+  hud.hideGameOver();
+  hud.updateScore(0);
+  hud.updateThreat(1);
+};
+
+const hud = new Hud({
+  onRestart: restart,
+  onDirection: (direction, active) => {
+    input.setPointer(direction, active);
+    if (active) hud.dismissHint();
+  },
+});
+
+const loop = (timestamp) => {
+  const delta = timestamp - lastTimestamp;
+  lastTimestamp = timestamp;
+
+  const collision = simulation.update(
+    delta,
+    input.direction,
+    renderer.width,
+    renderer.height,
+  );
+  if (input.direction !== 0) hud.dismissHint();
+
+  if (simulation.score !== lastScore) {
+    lastScore = simulation.score;
+    hud.updateScore(lastScore);
+  }
+  if (simulation.difficulty.level !== lastThreat) {
+    lastThreat = simulation.difficulty.level;
+    hud.updateThreat(lastThreat);
+  }
+  if (collision) {
+    input.clear();
+    bestScore = Math.max(bestScore, simulation.score);
+    localStorage.setItem('neon-dodger-best', String(bestScore));
+    hud.showGameOver(simulation.score, bestScore);
+  }
+
+  renderer.render(simulation, timestamp);
+  requestAnimationFrame(loop);
+};
+
+window.addEventListener('resize', () => {
+  renderer.resize();
+  simulation.resize(renderer.width, renderer.height);
+});
+
+window.addEventListener('keydown', (event) => {
+  if (
+    simulation.runState === 'game-over' &&
+    (event.code === 'Space' || event.code === 'Enter')
+  ) {
+    event.preventDefault();
+    restart();
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  simulation.setPaused(document.hidden);
+  hud.setPaused(document.hidden && simulation.runState === 'running');
+  if (!document.hidden) lastTimestamp = performance.now();
+});
+
+requestAnimationFrame(loop);
+
+</script>
+  </body>
+</html>
